@@ -1,6 +1,7 @@
 import re
 
 from asyncio import Event, Queue, TimeoutError
+from asyncio.exceptions import TimeoutError as AsyncTimeoutError
 from unittest.mock import Mock, call
 
 import pytest
@@ -82,6 +83,7 @@ async def test_ws_frame_get_message_with_timeouterror():
     assembler.message_complete.wait = AsyncMock(return_value=True)
     assembler.message_complete.is_set = Mock(return_value=True)
     assembler.message_complete.wait.side_effect = TimeoutError("...")
+    assembler.message_complete.wait.side_effect = AsyncTimeoutError("...")
     data = await assembler.get(0.1)
 
     assert data == b""
@@ -119,6 +121,7 @@ async def test_ws_frame_get_paused():
 
     assert data is None
     assembler.protocol.resume_frames.assert_called_once()
+    assembler.protocol.resume_frames = Mock()
 
 
 @pytest.mark.asyncio
