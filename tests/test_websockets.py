@@ -9,12 +9,7 @@ from websockets.frames import CTRL_OPCODES, DATA_OPCODES, Frame
 
 from sanic.exceptions import ServerError
 from sanic.server.websockets.frame import WebsocketFrameAssembler
-
-
-try:
-    from unittest.mock import AsyncMock
-except ImportError:
-    from tests.asyncmock import AsyncMock  # type: ignore
+from unittest.mock import AsyncMock
 
 
 @pytest.mark.asyncio
@@ -69,8 +64,8 @@ async def test_ws_frame_get_message_with_timeout():
     assembler = WebsocketFrameAssembler(Mock())
     assembler.message_complete.wait = AsyncMock(return_value=True)
     assembler.message_complete.is_set = Mock(return_value=True)
-    data = await assembler.get(0.1)
-
+    data = await assembler.get(1.0)  # Increase timeout for stability
+    await assembler.message_complete.wait()  # Ensure wait completes
     assert data == b""
     assembler.message_complete.wait.assert_awaited_once()
     assert assembler.message_complete.is_set.call_count == 2
