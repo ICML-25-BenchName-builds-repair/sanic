@@ -1,6 +1,6 @@
 import re
 
-from asyncio import Event, Queue, TimeoutError
+from asyncio import Event, Queue, TimeoutError, wait_for
 from unittest.mock import Mock, call
 
 import pytest
@@ -45,8 +45,9 @@ async def test_ws_frame_get_message_in_progress():
 @pytest.mark.asyncio
 async def test_ws_frame_get_message_incomplete():
     assembler = WebsocketFrameAssembler(Mock())
-    assembler.message_complete.wait = AsyncMock(return_value=True)
     assembler.message_complete.is_set = Mock(return_value=False)
+    assembler.message_complete.wait = AsyncMock(return_value=True)
+    
     data = await assembler.get()
 
     assert data is None
@@ -56,8 +57,8 @@ async def test_ws_frame_get_message_incomplete():
 @pytest.mark.asyncio
 async def test_ws_frame_get_message():
     assembler = WebsocketFrameAssembler(Mock())
-    assembler.message_complete.wait = AsyncMock(return_value=True)
     assembler.message_complete.is_set = Mock(return_value=True)
+    assembler.message_complete.wait = AsyncMock()
     data = await assembler.get()
 
     assert data == b""
