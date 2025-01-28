@@ -9,12 +9,7 @@ from websockets.frames import CTRL_OPCODES, DATA_OPCODES, Frame
 
 from sanic.exceptions import ServerError
 from sanic.server.websockets.frame import WebsocketFrameAssembler
-
-
-try:
-    from unittest.mock import AsyncMock
-except ImportError:
-    from tests.asyncmock import AsyncMock  # type: ignore
+from unittest.mock import AsyncMock
 
 
 @pytest.mark.asyncio
@@ -45,7 +40,7 @@ async def test_ws_frame_get_message_in_progress():
 @pytest.mark.asyncio
 async def test_ws_frame_get_message_incomplete():
     assembler = WebsocketFrameAssembler(Mock())
-    assembler.message_complete.wait = AsyncMock(return_value=True)
+    assembler.message_complete = AsyncMock(spec=Event)
     assembler.message_complete.is_set = Mock(return_value=False)
     data = await assembler.get()
 
@@ -56,7 +51,7 @@ async def test_ws_frame_get_message_incomplete():
 @pytest.mark.asyncio
 async def test_ws_frame_get_message():
     assembler = WebsocketFrameAssembler(Mock())
-    assembler.message_complete.wait = AsyncMock(return_value=True)
+    assembler.message_complete = AsyncMock(spec=Event)
     assembler.message_complete.is_set = Mock(return_value=True)
     data = await assembler.get()
 
@@ -67,7 +62,7 @@ async def test_ws_frame_get_message():
 @pytest.mark.asyncio
 async def test_ws_frame_get_message_with_timeout():
     assembler = WebsocketFrameAssembler(Mock())
-    assembler.message_complete.wait = AsyncMock(return_value=True)
+    assembler.message_complete = AsyncMock(spec=Event)
     assembler.message_complete.is_set = Mock(return_value=True)
     data = await assembler.get(0.1)
 
@@ -79,7 +74,7 @@ async def test_ws_frame_get_message_with_timeout():
 @pytest.mark.asyncio
 async def test_ws_frame_get_message_with_timeouterror():
     assembler = WebsocketFrameAssembler(Mock())
-    assembler.message_complete.wait = AsyncMock(return_value=True)
+    assembler.message_complete = AsyncMock(spec=Event)
     assembler.message_complete.is_set = Mock(return_value=True)
     assembler.message_complete.wait.side_effect = TimeoutError("...")
     data = await assembler.get(0.1)
