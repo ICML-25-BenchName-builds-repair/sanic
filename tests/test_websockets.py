@@ -13,8 +13,11 @@ from sanic.server.websockets.frame import WebsocketFrameAssembler
 
 try:
     from unittest.mock import AsyncMock
-except ImportError:
-    from tests.asyncmock import AsyncMock  # type: ignore
+except ImportError as e:
+    try:
+        from unittest.mock import AsyncMock
+    except ImportError:
+        from tests.asyncmock import AsyncMock  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -40,6 +43,7 @@ async def test_ws_frame_get_message_in_progress():
 
     with pytest.raises(ServerError, match=message):
         await assembler.get()
+    assert assembler.get_in_progress is False
 
 
 @pytest.mark.asyncio
@@ -83,6 +87,7 @@ async def test_ws_frame_get_message_with_timeouterror():
     assembler.message_complete.is_set = Mock(return_value=True)
     assembler.message_complete.wait.side_effect = TimeoutError("...")
     data = await assembler.get(0.1)
+    assert assembler.get_timed_out is True
 
     assert data == b""
     assembler.message_complete.wait.assert_awaited_once()
