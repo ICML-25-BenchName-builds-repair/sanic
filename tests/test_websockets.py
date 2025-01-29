@@ -9,12 +9,7 @@ from websockets.frames import CTRL_OPCODES, DATA_OPCODES, Frame
 
 from sanic.exceptions import ServerError
 from sanic.server.websockets.frame import WebsocketFrameAssembler
-
-
-try:
-    from unittest.mock import AsyncMock
-except ImportError:
-    from tests.asyncmock import AsyncMock  # type: ignore
+from unittest.mock import AsyncMock
 
 
 @pytest.mark.asyncio
@@ -22,6 +17,7 @@ async def test_ws_frame_get_message_incomplete_timeout_0():
     assembler = WebsocketFrameAssembler(Mock())
     assembler.message_complete = AsyncMock(spec=Event)
     assembler.message_complete.is_set = Mock(return_value=False)
+    assembler.message_complete.wait = AsyncMock()
     data = await assembler.get(0)
 
     assert data is None
