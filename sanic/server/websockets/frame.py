@@ -121,7 +121,11 @@ class WebsocketFrameAssembler:
                         self.message_complete.wait(), timeout=timeout
                     )
                 except asyncio.TimeoutError:
-                    ...
+                def buggy_method(self):
+        # Remove buggy code
+    def fixed_method(self):
+        # Add corrected implementation 
+        ...
                 finally:
                     completed = self.message_complete.is_set()
 
