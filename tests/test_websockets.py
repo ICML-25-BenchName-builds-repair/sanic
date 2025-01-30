@@ -1,6 +1,6 @@
 import re
 
-from asyncio import Event, Queue, TimeoutError
+from asyncio import Event, Queue
 from unittest.mock import Mock, call
 
 import pytest
