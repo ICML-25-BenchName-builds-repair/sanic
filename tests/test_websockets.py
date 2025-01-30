@@ -149,21 +149,32 @@ async def test_ws_frame_get_iter_in_progress():
 @pytest.mark.asyncio
 async def test_ws_frame_get_iter_none_in_queue():
     assembler = WebsocketFrameAssembler(Mock())
-    assembler.message_complete.set()
+    assembler.message_complete = AsyncMock(spec=Event)
+    assembler.message_complete.is_set = Mock(side_effect=[False, True, True])
     assembler.chunks = [b"foo", b"bar"]
 
     chunks = [x async for x in assembler.get_iter()]
 
     assert chunks == [b"foo", b"bar"]
+    assembler.message_complete.is_set.assert_has_calls(
+        [call(), call(), call()]
+    )
 
 
 @pytest.mark.asyncio
 async def test_ws_frame_get_iter_paused():
     assembler = WebsocketFrameAssembler(Mock())
-    assembler.message_complete.set()
+    assembler.message_complete = AsyncMock(spec=Event)
+    assembler.message_complete.is_set = Mock(side_effect=[False, True])
     assembler.paused = True
+    assembler.chunks = [b"foo", b"bar"]
 
-    [x async for x in assembler.get_iter()]
+    chunks = [x async for x in assembler.get_iter()]
+
+    assert chunks == [b"foo", b"bar"]
+    assembler.message_complete.is_set.assert_has_calls(
+        [call(), call()]
+    )
     assembler.protocol.resume_frames.assert_called_once()
 
 
