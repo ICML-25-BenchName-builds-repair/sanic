@@ -217,10 +217,10 @@ async def test_ws_frame_put_message_into_queue(opcode):
 
     await assembler.put(Frame(opcode, b"foo"))
 
-    assembler.chunks_queue.put.has_calls(
+    assembler.chunks_queue.put.assert_has_calls([
         call(b"foo"),
         call(None),
-    )
+    ])
 
 
 @pytest.mark.asyncio
