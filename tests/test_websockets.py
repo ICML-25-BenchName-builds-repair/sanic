@@ -21,6 +21,7 @@ except ImportError:
 async def test_ws_frame_get_message_incomplete_timeout_0():
     assembler = WebsocketFrameAssembler(Mock())
     assembler.message_complete = AsyncMock(spec=Event)
+    assembler.message_complete.wait.return_value = False
     assembler.message_complete.is_set = Mock(return_value=False)
     data = await assembler.get(0)
 
@@ -57,6 +58,7 @@ async def test_ws_frame_get_message_incomplete():
 async def test_ws_frame_get_message():
     assembler = WebsocketFrameAssembler(Mock())
     assembler.message_complete.wait = AsyncMock(return_value=True)
+    assembler.message_complete.wait.side_effect = None
     assembler.message_complete.is_set = Mock(return_value=True)
     data = await assembler.get()
 
@@ -68,6 +70,7 @@ async def test_ws_frame_get_message():
 async def test_ws_frame_get_message_with_timeout():
     assembler = WebsocketFrameAssembler(Mock())
     assembler.message_complete.wait = AsyncMock(return_value=True)
+    assembler.message_complete.wait.side_effect = None
     assembler.message_complete.is_set = Mock(return_value=True)
     data = await assembler.get(0.1)
 
