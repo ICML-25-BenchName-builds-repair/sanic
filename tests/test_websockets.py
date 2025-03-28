@@ -112,6 +112,7 @@ async def test_ws_frame_get_not_completed_start():
 @pytest.mark.asyncio
 async def test_ws_frame_get_paused():
     assembler = WebsocketFrameAssembler(Mock())
+    assembler.protocol = Mock()
     assembler.message_complete = AsyncMock(spec=Event)
     assembler.message_complete.is_set = Mock(side_effect=[False, True])
     assembler.paused = True
