@@ -8,6 +8,9 @@ from websockets.typing import Data
 
 from sanic.exceptions import ServerError
 
+# Import the monkey patch for AsyncMock
+import sanic.server.websockets
+
 
 if TYPE_CHECKING:
     from .impl import WebsocketImplProtocol
