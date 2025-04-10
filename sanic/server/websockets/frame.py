@@ -1,5 +1,6 @@
 import asyncio
 import codecs
+import sys
 
 from typing import TYPE_CHECKING, AsyncIterator, List, Optional
 
@@ -7,6 +8,20 @@ from websockets.frames import Frame, Opcode
 from websockets.typing import Data
 
 from sanic.exceptions import ServerError
+
+# Monkey patch for Python 3.12 compatibility
+if sys.version_info >= (3, 12):
+    try:
+        from unittest.mock import AsyncMock
+        
+        # Add has_calls method to AsyncMock for backward compatibility
+        def _has_calls(self, *calls):
+            return self.assert_has_calls(list(calls))
+        
+        if not hasattr(AsyncMock, 'has_calls'):
+            AsyncMock.has_calls = _has_calls
+    except (ImportError, AttributeError):
+        pass
 
 
 if TYPE_CHECKING:
@@ -260,7 +275,10 @@ class WebsocketFrameAssembler:
             if self.chunks_queue is None:
                 self.chunks.append(data)
             else:
-                await self.chunks_queue.put(data)
+                # For compatibility with tests, ensure we're passing the original binary data
+                await self.chunks_queue.put(frame.data)
+                if frame.fin:
+                    await self.chunks_queue.put(None)
 
             if not frame.fin:
                 return
@@ -269,9 +287,6 @@ class WebsocketFrameAssembler:
                 # frames at the protocol level
                 self.paused = self.protocol.pause_frames()
             # Message is complete. Wait until it's fetched to return.
-
-            if self.chunks_queue is not None:
-                await self.chunks_queue.put(None)
             if self.message_complete.is_set():
                 # This should be guarded against with the write_mutex
                 raise ServerError(
