@@ -217,10 +217,12 @@ async def test_ws_frame_put_message_into_queue(opcode):
 
     await assembler.put(Frame(opcode, b"foo"))
 
-    assembler.chunks_queue.put.has_calls(
-        call(b"foo"),
+    # For TEXT frames, data gets decoded to string; for others, it stays as bytes
+    expected_data = "foo" if opcode.value == 1 else b"foo"
+    assembler.chunks_queue.put.assert_has_calls([
+        call(expected_data),
         call(None),
-    )
+    ])
 
 
 @pytest.mark.asyncio
