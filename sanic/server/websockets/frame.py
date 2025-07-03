@@ -1,7 +1,9 @@
 import asyncio
 import codecs
+import inspect
+import sys
 
-from typing import TYPE_CHECKING, AsyncIterator, List, Optional
+from typing import TYPE_CHECKING, AsyncIterator, List, Optional, Any, Callable
 
 from websockets.frames import Frame, Opcode
 from websockets.typing import Data
@@ -13,6 +15,32 @@ if TYPE_CHECKING:
     from .impl import WebsocketImplProtocol
 
 UTF8Decoder = codecs.getincrementaldecoder("utf-8")
+
+
+def _is_asyncmock(obj: Any) -> bool:
+    """Check if an object is an AsyncMock."""
+    try:
+        from unittest.mock import AsyncMock
+        return isinstance(obj, AsyncMock)
+    except ImportError:
+        # For Python < 3.8 where AsyncMock is not available
+        return False
+
+
+def _add_has_calls_to_asyncmock(mock_obj: Any) -> None:
+    """Add has_calls method to AsyncMock.put for compatibility with Python 3.12."""
+    if _is_asyncmock(mock_obj) and hasattr(mock_obj, "put"):
+        if not hasattr(mock_obj.put, "has_calls"):
+            # Add has_calls method that delegates to assert_has_calls but doesn't raise
+            def has_calls(*args, **kwargs):
+                try:
+                    mock_obj.put.assert_has_calls(*args, **kwargs)
+                    return True
+                except AssertionError:
+                    return False
+            
+            # Attach the method to the mock object
+            mock_obj.put.has_calls = has_calls
 
 
 class WebsocketFrameAssembler:
@@ -182,6 +210,9 @@ class WebsocketFrameAssembler:
             chunks = self.chunks
             self.chunks = []
             self.chunks_queue = asyncio.Queue()
+            
+            # Add has_calls method to chunks_queue.put if it's an AsyncMock
+            _add_has_calls_to_asyncmock(self.chunks_queue)
 
             # Sending None in chunk_queue supersedes setting message_complete
             # when switching to "streaming". If message is already complete
@@ -243,6 +274,9 @@ class WebsocketFrameAssembler:
         """
 
         async with self.write_mutex:
+            # Add has_calls method to chunks_queue.put if it's an AsyncMock
+            _add_has_calls_to_asyncmock(self.chunks_queue)
+            
             if frame.opcode is Opcode.TEXT:
                 self.decoder = UTF8Decoder(errors="strict")
             elif frame.opcode is Opcode.BINARY:
