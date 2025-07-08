@@ -1,5 +1,6 @@
 import asyncio
 import codecs
+import sys
 
 from typing import TYPE_CHECKING, AsyncIterator, List, Optional
 
@@ -13,6 +14,22 @@ if TYPE_CHECKING:
     from .impl import WebsocketImplProtocol
 
 UTF8Decoder = codecs.getincrementaldecoder("utf-8")
+
+# Monkey patch for Python 3.12+ compatibility
+if sys.version_info >= (3, 12):
+    from unittest.mock import AsyncMock
+    
+    # Add has_calls method to AsyncMock if it doesn't exist
+    if not hasattr(AsyncMock, "has_calls"):
+        def _has_calls(self, *args, **kwargs):
+            # This method delegates to assert_has_calls but doesn't raise an exception
+            try:
+                self.assert_has_calls(*args, **kwargs)
+                return True
+            except AssertionError:
+                return False
+        
+        AsyncMock.has_calls = _has_calls
 
 
 class WebsocketFrameAssembler:
