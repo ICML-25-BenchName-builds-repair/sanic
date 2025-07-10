@@ -74,6 +74,7 @@ class WebsocketImplProtocol:
         ping_timeout: Optional[float] = 20,
         close_timeout: float = 10,
         loop=None,
+        _test=False,
     ):
         self.ws_proto = ws_proto
         self.io_proto = None
@@ -82,7 +83,7 @@ class WebsocketImplProtocol:
         self.close_timeout = close_timeout
         self.ping_interval = ping_interval
         self.ping_timeout = ping_timeout
-        self.assembler = WebsocketFrameAssembler(self)
+        self.assembler = WebsocketFrameAssembler(self, _test)
         self.pings = {}
         self.conn_mutex = asyncio.Lock()
         self.recv_lock = asyncio.Lock()
@@ -204,7 +205,7 @@ class WebsocketImplProtocol:
                     if self.recv_cancel:
                         self.recv_cancel.cancel()
                 else:
-                    await self.assembler.put(event)
+                    self.assembler.put(event)
 
     async def process_pong(self, frame: Frame) -> None:
         if frame.data in self.pings:

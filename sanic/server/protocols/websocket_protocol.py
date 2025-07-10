@@ -41,6 +41,7 @@ class WebSocketProtocol(HttpProtocol):
         websocket_max_size: Optional[int] = None,
         websocket_ping_interval: Optional[float] = 20.0,
         websocket_ping_timeout: Optional[float] = 20.0,
+        _test=False,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -49,6 +50,7 @@ class WebSocketProtocol(HttpProtocol):
         self.websocket_max_size = websocket_max_size
         self.websocket_ping_interval = websocket_ping_interval
         self.websocket_ping_timeout = websocket_ping_timeout
+        self._test = _test
 
     def connection_lost(self, exc):
         if self.websocket is not None:
@@ -150,6 +152,7 @@ class WebSocketProtocol(HttpProtocol):
             ping_interval=self.websocket_ping_interval,
             ping_timeout=self.websocket_ping_timeout,
             close_timeout=self.websocket_timeout,
+            _test=self._test,
         )
         loop = (
             request.transport.loop

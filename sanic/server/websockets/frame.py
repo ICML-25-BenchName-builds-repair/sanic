@@ -51,7 +51,7 @@ class WebsocketFrameAssembler:
         chunks_queue: Optional[asyncio.Queue[Optional[Data]]]
         paused: bool
 
-    def __init__(self, protocol) -> None:
+        def __init__(self, protocol, _test=False) -> None:
         self.protocol = protocol
 
         self.read_mutex = asyncio.Lock()
@@ -187,7 +187,7 @@ class WebsocketFrameAssembler:
             # when switching to "streaming". If message is already complete
             # when the switch happens, put() didn't send None, so we have to.
             if self.message_complete.is_set():
-                await self.chunks_queue.put(None)
+                self.chunks_queue.put(None)
 
             # Locking with get_in_progress ensures only one task can get here
             for c in chunks:
@@ -232,7 +232,7 @@ class WebsocketFrameAssembler:
             self.chunks = []
             self.chunks_queue = None
 
-    async def put(self, frame: Frame) -> None:
+    def put(self, frame: Frame) -> None:
         """
         Add ``frame`` to the next message.
         When ``frame`` is the final frame in a message, :meth:`put` waits
@@ -260,7 +260,7 @@ class WebsocketFrameAssembler:
             if self.chunks_queue is None:
                 self.chunks.append(data)
             else:
-                await self.chunks_queue.put(data)
+                self.chunks_queue.put(data)
 
             if not frame.fin:
                 return
@@ -271,7 +271,7 @@ class WebsocketFrameAssembler:
             # Message is complete. Wait until it's fetched to return.
 
             if self.chunks_queue is not None:
-                await self.chunks_queue.put(None)
+                self.chunks_queue.put(None)
             if self.message_complete.is_set():
                 # This should be guarded against with the write_mutex
                 raise ServerError(
