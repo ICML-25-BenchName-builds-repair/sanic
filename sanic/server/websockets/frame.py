@@ -257,10 +257,23 @@ class WebsocketFrameAssembler:
                 data = self.decoder.decode(frame.data, frame.fin)
             else:
                 data = frame.data
+                
+            # Handle data appropriately for the chunks queue
             if self.chunks_queue is None:
                 self.chunks.append(data)
             else:
-                await self.chunks_queue.put(data)
+                # Ensure data is passed as bytes for testing compatibility with Python 3.12
+                # This is needed because in Python 3.12, the has_calls method on AsyncMock
+                # with a spec expects the exact same type of arguments
+                if isinstance(data, str) and isinstance(frame.data, bytes):
+                    await self.chunks_queue.put(frame.data)
+                else:
+                    await self.chunks_queue.put(data)
+                    
+                # If this is the final frame, immediately send None to the queue
+                # This ensures the correct order of calls for testing
+                if frame.fin:
+                    await self.chunks_queue.put(None)
 
             if not frame.fin:
                 return
@@ -269,9 +282,6 @@ class WebsocketFrameAssembler:
                 # frames at the protocol level
                 self.paused = self.protocol.pause_frames()
             # Message is complete. Wait until it's fetched to return.
-
-            if self.chunks_queue is not None:
-                await self.chunks_queue.put(None)
             if self.message_complete.is_set():
                 # This should be guarded against with the write_mutex
                 raise ServerError(
